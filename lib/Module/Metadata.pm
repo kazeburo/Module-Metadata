@@ -209,7 +209,7 @@ sub new_from_module {
     } else {
       find( {
         wanted => sub {
-          push @files, $_ if -f $_ && /\.pm$/;
+          push @files, $_ if -f $_ && /\.pm(?:\.PL)?$/;
         },
         no_chdir => 1,
       }, $dir );
@@ -221,7 +221,7 @@ sub new_from_module {
     foreach my $file (@files) {
       my $mapped_filename = File::Spec->abs2rel( $file, $dir );
       my @path = split( /\//, $mapped_filename );
-      (my $prime_package = join( '::', @path )) =~ s/\.pm$//;
+      (my $prime_package = join( '::', @path )) =~ s/\.pm(?:\.PL)?$//;
   
       my $pm_info = $class->new_from_file( $file );
   
