@@ -354,7 +354,7 @@ sub _init {
   my $self = bless(\%data, $class);
 
   if ( $handle ) {
-    $self->_parse_fh($handle);
+    $self->_parse_fh($handle,$filename);
   }
   else {
     $self->_parse_file();
@@ -362,7 +362,7 @@ sub _init {
 
   unless($self->{module} and length($self->{module})) {
     my ($v, $d, $f) = File::Spec->splitpath($self->{filename});
-    if($f =~ /\.pm$/) {
+    if($f =~ /\.pm(?:\.PL)?$/) {
       $f =~ s/\..+$//;
       my @candidates = grep /$f$/, @{$self->{packages}};
       $self->{module} = shift(@candidates); # punt
@@ -437,12 +437,11 @@ sub _parse_file {
   my $filename = $self->{filename};
   my $fh = IO::File->new( $filename )
     or croak( "Can't open '$filename': $!" );
-
-  $self->_parse_fh($fh);
+  $self->_parse_fh($fh,$filename);
 }
 
 sub _parse_fh {
-  my ($self, $fh) = @_;
+  my ($self, $fh, $filename) = @_;
 
   my( $in_pod, $seen_end, $need_vers ) = ( 0, 0, 0 );
   my( @pkgs, %vers, %pod, @pod );
@@ -450,6 +449,7 @@ sub _parse_fh {
   my $pod_sect = '';
   my $pod_data = '';
 
+  $filename = '' if ! defined $filename;
   while (defined( my $line = <$fh> )) {
     my $line_num = $.;
 
@@ -459,7 +459,7 @@ sub _parse_fh {
     $in_pod = ($line =~ /^=(?!cut)/) ? 1 : ($line =~ /^=cut/) ? 0 : $in_pod;
 
     # Would be nice if we could also check $in_string or something too
-    last if !$in_pod && $line =~ /^__(?:DATA|END)__$/;
+    last if !$in_pod && ( $line =~ /^__(?:DATA|END)__$/ && $filename !~ m!\.pm\.PL$! );
 
     if ( $in_pod || $line =~ /^=cut/ ) {
 
